@@ -42,6 +42,13 @@ while [ "$1" != "" ]; do
 			fi
 		;;
 
+		-email | --email )
+			if [ "$2" != "" ]; then
+				EMAIL=$2
+				shift
+			fi
+		;;
+
 		-dt | --documenttype )
 			if [ "$2" != "" ]; then
 				DOCUMENT_IMAGE_TYPE=$2
@@ -112,19 +119,47 @@ DOCUMENT_VERSION=${DOCUMENT_VERSION:-latest}
 
 JWT_ENABLED=${JWT_ENABLED:-true}
 JWT_HEADER=${JWT_HEADER:-AuthorizationJwt}
-JWT_SECRET=${JWT_SECRET:-test4nc}
+JWT_SECRET=${JWT_SECRET:-JWTforTest}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
 WOPI_ENABLED=${WOPI_ENABLED:-true}
 
 DS_LOG_LEVEL=${DS_LOG_LEVEL:-WARN}
 
+if [ "$DOMAIN" == "" ] ; then
+	echo "The domain name is not specified";
+else
+	EMAIL=${EMAIL:-support@$DOMAIN}
+fi
+
+command_exists () {
+    type "$1" &> /dev/null;
+}
+
+install_docker_using_script () {
+	if ! command_exists curl ; then
+		apt-get -y -q install curl
+	fi
+
+	curl -fsSL https://get.docker.com -o get-docker.sh
+	sh get-docker.sh
+	rm get-docker.sh
+	
+	systemctl enable --now docker
+}
+
 if [ "$INIT_SYSTEM" == "true" ] ; then
 
 	apt update;
-	apt install snapd -y ;
+	apt install curl snapd -y ;
 	snap install --classic certbot;
 	ln -s /snap/bin/certbot /usr/bin/certbot;
+	
+	if command_exists docker ; then
+		systemctl enable --now docker
+	else
+		install_docker_using_script
+	fi
 
 	mkdir -p "$BASE_DIR/DocumentServer/data/";
 	mkdir -p "$BASE_DIR/DocumentServer/logs";
@@ -137,17 +172,29 @@ if [ "$INIT_SYSTEM" == "true" ] ; then
 	cp letsencrypt.conf /app/nginx/include/letsencrypt.conf
 	cp nginx.conf /app/nginx/nginx.conf
 	
-	certbot certonly --standalone --non-interactive --agree-tos --no-eff-email --no-redirect --email support@$DOMAIN --cert-name $DOMAIN --domains $DOMAIN ;
+	docker run --rm --name certbot -p 80:80 -v "/etc/letsencrypt:/etc/letsencrypt" -v "/lib/letsencrypt:/var/lib/letsencrypt" -v "/app/nginx/www:/app/nginx/www" certbot/certbot certonly --webroot -v --cert-name $DOMAIN -w /app/nginx/www --noninteractive --agree-tos --email $EMAIL -d $DOMAIN
+	CHECK_STATUS=$?;
 
-	systemctl enable --now docker;
+	if [ "$CHECK_STATUS" == "0" ] ; then
+		echo "Done"
+		echo "Certificates have been created!"
+	else
+		echo "Error create certificates";
+		exit 1;	
+	fi
+	
+	###Create cronjob certbot renew
+	SLEEPTIME=$(awk 'BEGIN{srand(); print int(rand()*(3600+1))}');
+	echo "0 0,12 * * * root sleep $SLEEPTIME && certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
+
 
 	docker network create --driver bridge onlyoffice 2> /dev/null
 	
 	docker run -i -t -d -p 80:80 -p 443:443 --net onlyoffice --restart=always --name=nginx-server \
     -v /app/nginx/nginx.conf:/etc/nginx/nginx.conf \
     -v /app/nginx/include:/etc/nginx/include \
-    -v /etc/letsencrypt/live/$DOMAIN/fullchain.pem:/etc/nginx/ssl/fullchain.pem \
-    -v /etc/letsencrypt/live/$DOMAIN/privkey.pem:/etc/nginx/ssl/privkey.pem \
+    -v /etc/letsencrypt/live/$DOMAIN:/etc/nginx/ssl \
+    -v /etc/letsencrypt/live/$DOMAIN:/etc/nginx/ssl \
     -v /app/nginx/www:/usr/share/nginx/html:ro nginx
 
 	echo "Sleeeep...";
@@ -161,7 +208,7 @@ if [ "$CERT_RENEW" == "true" ] ; then
 	CHECK_STATUS=$?;
 
 	if [ "$CHECK_STATUS" == "0" ] ; then
-		certbot certonly --expand --webroot -w /app/nginx/ssl/ --cert-name $DOMAIN --noninteractive --agree-tos --email support@$DOMAIN -d $DOMAIN ;
+		docker run --rm --name certbot -v "/etc/letsencrypt:/etc/letsencrypt" -v "/lib/letsencrypt:/var/lib/letsencrypt" -v "/app/nginx/www:/app/nginx/www" certbot/certbot certonly --webroot -v --cert-name $DOMAIN -w /app/nginx/www --noninteractive --agree-tos --email $EMAIL -d $DOMAIN
 	else
 		echo "Container NGINX is not running";
 		exit 1;	
