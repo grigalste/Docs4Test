@@ -243,7 +243,7 @@ cat <<EOF > /app/nginx/include/${DOCUMENT_VERSION}.conf
 EOF
 
 ###Add new link
-sed -i '/<!-- ##PASTHERE -->/a <li><a href="/'${DOCUMENT_VERSION}'/">'${DOCUMENT_VERSION}' - '${DOCUMENT_IMAGE_TYPE}'</a></li>' /app/nginx/www/index.html
+sed -i '/<!-- ##PASTHERE -->/a <li><a href="/'${DOCUMENT_VERSION}'/" target="_blank">'${DOCUMENT_VERSION}' - '${DOCUMENT_IMAGE_TYPE}'</a></li>' /app/nginx/www/index.html
 
 ###Fix EXAMPLE config
 docker exec ${ID_CONTEINER} bash -c 'cat <<EOF > /etc/onlyoffice/documentserver-example/local-production-linux.json
