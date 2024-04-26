@@ -28,6 +28,13 @@ while [ "$1" != "" ]; do
 			fi
 		;;
 
+		-cert | --certrenew )
+			if [ "$2" != "" ]; then
+				CERT_RENEW="true"
+				shift
+			fi
+		;;
+
 		-domain | --domain )
 			if [ "$2" != "" ]; then
 				DOMAIN=$2
@@ -146,8 +153,20 @@ if [ "$INIT_SYSTEM" == "true" ] ; then
 	echo "Sleeeep...";
 	sleep 2s
 
-#	certbot certonly --expand --webroot -w /app/nginx/ssl/ --cert-name $DOMAIN --noninteractive --agree-tos --email support@$DOMAIN -d $DOMAIN ;	
-	
+fi
+
+if [ "$CERT_RENEW" == "true" ] ; then
+
+	RESULT=$(docker ps | grep nginx-server);
+	CHECK_STATUS=$?;
+
+	if [ "$CHECK_STATUS" == "0" ] ; then
+		certbot certonly --expand --webroot -w /app/nginx/ssl/ --cert-name $DOMAIN --noninteractive --agree-tos --email support@$DOMAIN -d $DOMAIN ;
+	else
+		echo "Container NGINX is not running";
+		exit 1;	
+	fi
+		
 fi
 
 if [ "$DEL_CONTAINER" == "true" ] ; then
