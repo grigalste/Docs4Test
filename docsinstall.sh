@@ -130,7 +130,7 @@ if [ "$INIT_SYSTEM" == "true" ] ; then
 	cp letsencrypt.conf /app/nginx/include/letsencrypt.conf
 	cp nginx.conf /app/nginx/nginx.conf
 	
-	certbot certonly --expand --cert-name $DOMAIN --noninteractive --agree-tos --email support@$DOMAIN -d $DOMAIN ;
+	certbot certonly --standalone --non-interactive --agree-tos --no-eff-email --no-redirect --email support@$DOMAIN --cert-name $DOMAIN --domains $DOMAIN ;
 
 	systemctl enable --now docker;
 
