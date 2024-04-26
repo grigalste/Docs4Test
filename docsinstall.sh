@@ -146,7 +146,7 @@ if [ "$INIT_SYSTEM" == "true" ] ; then
 	echo "Sleeeep...";
 	sleep 2s
 
-	certbot certonly --expand --webroot -w /app/nginx/ssl/ --cert-name $DOMAIN --noninteractive --agree-tos --email support@$DOMAIN -d $DOMAIN ;	
+#	certbot certonly --expand --webroot -w /app/nginx/ssl/ --cert-name $DOMAIN --noninteractive --agree-tos --email support@$DOMAIN -d $DOMAIN ;	
 	
 fi
 
