@@ -130,7 +130,7 @@ if [ "$INIT_SYSTEM" == "true" ] ; then
 	cp letsencrypt.conf /app/nginx/include/letsencrypt.conf
 	cp nginx.conf /app/nginx/nginx.conf
 	
-	certbot certonly --expand --webroot -w /app/nginx/ssl/ --cert-name $DOMAIN --noninteractive --agree-tos --email support@$DOMAIN -d $DOMAIN ;
+	certbot certonly --expand --cert-name $DOMAIN --noninteractive --agree-tos --email support@$DOMAIN -d $DOMAIN ;
 
 	systemctl enable --now docker;
 
@@ -142,6 +142,11 @@ if [ "$INIT_SYSTEM" == "true" ] ; then
     -v /etc/letsencrypt/live/$DOMAIN/fullchain.pem:/etc/nginx/ssl/fullchain.pem \
     -v /etc/letsencrypt/live/$DOMAIN/privkey.pem:/etc/nginx/ssl/privkey.pem \
     -v /app/nginx/www:/usr/share/nginx/html:ro nginx
+
+	echo "Sleeeep...";
+	sleep 2s
+
+	certbot certonly --expand --webroot -w /app/nginx/ssl/ --cert-name $DOMAIN --noninteractive --agree-tos --email support@$DOMAIN -d $DOMAIN ;	
 	
 fi
 

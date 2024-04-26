@@ -2,7 +2,7 @@
 Docs4Test
 
 Init:
-bash docsinstall.sh -init true -domain docker.office24.site
+bash docsinstall.sh -init true -domain domain.name
 
 Add DS:
 bash docsinstall.sh -add true --documentversion 7.5.1.1
