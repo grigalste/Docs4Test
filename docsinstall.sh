@@ -267,3 +267,4 @@ docker exec ${ID_CONTEINER} sed 's,autostart=false,autostart=true,' -i /etc/supe
 fi
 
 docker ps -a;
+
