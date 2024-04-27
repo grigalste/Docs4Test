@@ -1,8 +1,10 @@
 # Docs4Test
 
-
+```sh
 git clone https://github.com/grigalste/Docs4Test.git && cd ./Docs4Test
 cp docsinstall.sh /usr/local/bin/docsinstall && chmod a+x /usr/local/bin/docsinstall
+```
+
 ### Init:
 ```sh
 bash docsinstall.sh -init true -domain domain.name -email mail@domain.name
