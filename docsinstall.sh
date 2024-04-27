@@ -8,30 +8,42 @@ while [ "$1" != "" ]; do
 	case $1 in
 
 		-add | --add )
-			if [ "$2" != "" ]; then
-				ADD_CONTAINER="true"
+			if [ "$2" == "true" ] ; then
+				ADD_CONTAINER="true";
 				shift
+			elif [ "$2" != "" ] || [ "$2" == "" ] ; then
+				echo "Invalid value '"$2"' for the '"$1"' parameter!";
+				exit 1;
 			fi
 		;;
 
 		-del | --del )
-			if [ "$2" != "" ]; then
-				DEL_CONTAINER="true"
+			if [ "$2" == "true" ] ; then
+				DEL_CONTAINER="true";
 				shift
+			elif [ "$2" != "" ] || [ "$2" == "" ] ; then
+				echo "Invalid value '"$2"' for the '"$1"' parameter!";
+				exit 1;
 			fi
 		;;
 
 		-init | --init )
-			if [ "$2" != "" ]; then
-				INIT_SYSTEM="true"
+			if [ "$2" == "true" ] ; then
+				INIT_SYSTEM="true";
 				shift
+			elif [ "$2" != "" ] || [ "$2" == "" ] ; then
+				echo "Invalid value '"$2"' for the '"$1"' parameter!";
+				exit 1;
 			fi
 		;;
 
 		-cert | --certrenew )
-			if [ "$2" != "" ]; then
-				CERT_RENEW="true"
+			if [ "$2" == "true" ] ; then
+				CERT_RENEW="true";
 				shift
+			elif [ "$2" != "" ] || [ "$2" == "" ] ; then
+				echo "Invalid value '"$2"' for the '"$1"' parameter!";
+				exit 1;
 			fi
 		;;
 
@@ -71,22 +83,27 @@ while [ "$1" != "" ]; do
 		;;
 
 		-je | --jwtenabled )
-			if [ "$2" != "" ]; then
-				JWT_ENABLED=$2
+			if [ "$2" == "true" ] || [ "$2" == "false" ]; then
+				JWT_ENABLED=$2;
 				shift
+			elif [ "$2" != "" ] ; then
+				echo "Invalid value '"$2"' for the '"$1"' parameter!";
+				exit 1;
 			fi
 		;;
 
 		-jh | --jwtheader )
 			if [ "$2" != "" ]; then
-				JWT_HEADER=$2
+				JWT_HEADER=$2;
+				JWT_ENABLED="true";
 				shift
 			fi
 		;;
 
 		-js | --jwtsecret )
 			if [ "$2" != "" ]; then
-				JWT_SECRET=$2
+				JWT_SECRET=$2;
+				JWT_ENABLED="true";
 				shift
 			fi
 		;;
@@ -98,11 +115,47 @@ while [ "$1" != "" ]; do
 			fi
 		;;
 
-		-log | --dsloglevel )
-			if [ "$2" != "" ]; then
-				DS_LOG_LEVEL=$2
+		-wopi | --wopi )
+			if [ "$2" == "true" ] || [ "$2" == "false" ]; then
+				WOPI_ENABLED=$2;
 				shift
+			elif [ "$2" != "" ] ; then
+				echo "Invalid value '"$2"' for the '"$1"' parameter!";
+				exit 1;
 			fi
+		;;
+
+		-log | --dsloglevel )
+			if [ "$2" == "WARN" ] || [ "$2" == "DEBUG" ] || [ "$2" == "ERROR" ] || [ "$2" == "INFO" ]; then
+				DS_LOG_LEVEL=$2;
+				shift
+			elif [ "$2" != "" ] ; then
+				echo "Invalid value '"$2"' for the '"$1"' parameter!";
+				exit 1;
+			fi
+		;;
+
+		-? | -h | --help )
+			echo "  Usage: bash $0 [PARAMETER] [[PARAMETER], ...]"
+			echo
+			echo "    Parameters:"
+			echo "      -add | --add                "
+			echo "      -del | --del                "
+			echo "      -init | --init              "
+			echo "      -cert | --certrenew         "
+			echo "      -domain | --domain          defines the domain for Let's Encrypt certificate"
+			echo "      -email | --email            defines the domain administator mail address for Let's Encrypt certificate"
+			echo "      -dt | --documenttype        "
+			echo "      -dv | --documentversion     document version"
+			echo "      -dn | --documentname        "
+			echo "      -je | --jwtenabled          specifies the enabling the JWT validation (true|false)"
+			echo "      -jh | --jwtheader           defines the http header that will be used to send the JWT"
+			echo "      -js | --jwtsecret           defines the secret key to validate the JWT in the request"
+			echo "      -jib | --jwtinbody          "
+			echo "      -wopi | --wopi              "
+			echo "      -log | --dsloglevel         "
+			echo "      -?, -h, --help              this help"
+			exit 0
 		;;
 
 		* )
@@ -119,18 +172,20 @@ DOCUMENT_VERSION=${DOCUMENT_VERSION:-latest}
 
 JWT_ENABLED=${JWT_ENABLED:-true}
 JWT_HEADER=${JWT_HEADER:-AuthorizationJwt}
-JWT_SECRET=${JWT_SECRET:-JWTforTest}
+JWT_SECRET=${JWT_SECRET:-$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 32)}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
 WOPI_ENABLED=${WOPI_ENABLED:-true}
 
 DS_LOG_LEVEL=${DS_LOG_LEVEL:-WARN}
 
-if [ "$DOMAIN" == "" ] ; then
-	echo "The domain name is not specified";
-else
-	EMAIL=${EMAIL:-support@$DOMAIN}
-fi
+domain_check () {
+	if [ "$DOMAIN" == "" ] ; then
+		echo "The domain name is not specified";
+	else
+		EMAIL=${EMAIL:-support@$DOMAIN}
+	fi
+}
 
 command_exists () {
     type "$1" &> /dev/null;
@@ -149,6 +204,8 @@ install_docker_using_script () {
 }
 
 if [ "$INIT_SYSTEM" == "true" ] ; then
+
+	domain_check
 
 	apt update;
 	apt install curl snapd -y ;
@@ -203,7 +260,9 @@ if [ "$INIT_SYSTEM" == "true" ] ; then
 fi
 
 if [ "$CERT_RENEW" == "true" ] ; then
-
+	
+	domain_check
+	
 	RESULT=$(docker ps | grep nginx-server);
 	CHECK_STATUS=$?;
 
@@ -313,5 +372,9 @@ docker exec ${ID_CONTEINER} sed 's,autostart=false,autostart=true,' -i /etc/supe
 
 fi
 
-docker ps -a;
+if command_exists docker ; then
+	docker ps -a;
+else
+	echo "Nothing to do";
+fi
 
