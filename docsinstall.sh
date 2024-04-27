@@ -175,7 +175,7 @@ JWT_HEADER=${JWT_HEADER:-AuthorizationJwt}
 JWT_SECRET=${JWT_SECRET:-$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 32)}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
-WOPI_ENABLED=${WOPI_ENABLED:-true}
+WOPI_ENABLED=${WOPI_ENABLED:-false}
 
 DS_LOG_LEVEL=${DS_LOG_LEVEL:-WARN}
 
