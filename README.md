@@ -22,7 +22,8 @@ bash docsinstall.sh -cert true -domain domain.name -email mail@domain.name
 bash docsinstall.sh -add true --documentversion 7.5.1.1
 ```
 ```sh
-bash docsinstall.sh -add true --documentversion 7.5.1.1 --jwtenabled true --jwtheader AuthorizationJwt --jwtsecret JWTforTest --wopi true
+bash docsinstall.sh -add true --documentversion 7.5.1.1 --jwtenabled true \
+--jwtheader AuthorizationJwt --jwtsecret JWTforTest --wopi true
 ```
 ```sh
 bash docsinstall.sh -add true --documentversion 8.0.1.1 -log DEBUG
