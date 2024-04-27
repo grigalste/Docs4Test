@@ -227,11 +227,16 @@ if [ "$INIT_SYSTEM" == "true" ] ; then
 	
 	cp index.html /app/nginx/www/index.html 
 	cp letsencrypt.conf /app/nginx/include/letsencrypt.conf
-	cp nginx.conf /app/nginx/nginx.conf
+	cp -f nginx_http.conf /app/nginx/nginx.conf
 	
-	docker run --rm --name certbot -p 80:80 -v "/etc/letsencrypt:/etc/letsencrypt" -v "/lib/letsencrypt:/var/lib/letsencrypt" -v "/app/nginx/www:/app/nginx/www" certbot/certbot certonly --webroot -v --cert-name $DOMAIN -w /app/nginx/www --noninteractive --agree-tos --email $EMAIL -d $DOMAIN
+	docker run -i -t -d -p 80:80 --restart=always --name=http-server \
+    -v /app/nginx/nginx.conf:/etc/nginx/nginx.conf \
+    -v /app/nginx/include:/etc/nginx/include \
+    -v /app/nginx/www:/usr/share/nginx/html:ro nginx
+	
+	certbot certonly --expand --webroot -w /app/nginx/www/ --cert-name $DOMAIN --noninteractive --agree-tos --email $EMAIL -d $DOMAIN ;
 	CHECK_STATUS=$?;
-
+#	docker run --rm --name certbot -p 80:80 -v "/etc/letsencrypt:/etc/letsencrypt" -v "/lib/letsencrypt:/var/lib/letsencrypt" -v "/app/nginx/www:/app/nginx/www" certbot/certbot certonly --webroot -v --cert-name $DOMAIN -w /app/nginx/www --noninteractive --agree-tos --email $EMAIL -d $DOMAIN
 	if [ "$CHECK_STATUS" == "0" ] ; then
 		echo "Done"
 		echo "Certificates have been created!"
@@ -244,14 +249,17 @@ if [ "$INIT_SYSTEM" == "true" ] ; then
 	SLEEPTIME=$(awk 'BEGIN{srand(); print int(rand()*(3600+1))}');
 	echo "0 0,12 * * * root sleep $SLEEPTIME && certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
 
-
+	docker rm -f http-server
+	
+	cp -f nginx_https.conf /app/nginx/nginx.conf
+	
 	docker network create --driver bridge onlyoffice 2> /dev/null
 	
 	docker run -i -t -d -p 80:80 -p 443:443 --net onlyoffice --restart=always --name=nginx-server \
     -v /app/nginx/nginx.conf:/etc/nginx/nginx.conf \
     -v /app/nginx/include:/etc/nginx/include \
-    -v /etc/letsencrypt/live/$DOMAIN:/etc/nginx/ssl \
-    -v /etc/letsencrypt/live/$DOMAIN:/etc/nginx/ssl \
+    -v /etc/letsencrypt/live/$DOMAIN/fullchain.pem:/etc/nginx/ssl/fullchain.pem \
+    -v /etc/letsencrypt/live/$DOMAIN/privkey.pem:/etc/nginx/ssl/privkey.pem \
     -v /app/nginx/www:/usr/share/nginx/html:ro nginx
 
 	echo "Sleeeep...";
