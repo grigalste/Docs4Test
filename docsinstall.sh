@@ -303,7 +303,7 @@ if [ "$DEL_CONTAINER" == "true" ] ; then
 	rm /app/nginx/include/${DOCUMENT_VERSION}.conf
 	docker exec nginx-server service nginx reload
 
-	sed -i '/<li><a href="\/'${DOCUMENT_VERSION}'\/">'${DOCUMENT_VERSION}' - /d' /app/nginx/www/index.html
+	sed -i '/'${DOCUMENT_VERSION}' - /d' /app/nginx/www/index.html
 
 fi
 
