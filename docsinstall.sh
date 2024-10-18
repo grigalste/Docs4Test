@@ -240,6 +240,14 @@ if [ "$INIT_SYSTEM" == "true" ] ; then
 	if [ "$CHECK_STATUS" == "0" ] ; then
 		echo "Done"
 		echo "Certificates have been created!"
+
+cat <<EOF > /etc/letsencrypt/renewal-hooks/deploy/docker-restart.sh
+#!/bin/bash
+docker restart nginx-server  
+        
+EOF
+		chmod +x /etc/letsencrypt/renewal-hooks/deploy/docker-restart.sh
+
 	else
 		echo "Error create certificates";
 		exit 1;	
